@@ -209,6 +209,14 @@ export class Minio extends pulumi.ComponentResource {
         ]),
     )
     const domains = domainMap.apply((map) => Array.from(map.keys()))
+    const dnsNames = domains.apply((allDomains) =>
+      allDomains.filter(
+        (domain) =>
+          domain.startsWith('*.') ||
+          allDomains.indexOf(`*.${domain.split('.').slice(1).join('.')}`) ===
+            -1,
+      ),
+    )
 
     this.certificate = new certmanager.v1.Certificate(
       name,
@@ -223,7 +231,7 @@ export class Minio extends pulumi.ComponentResource {
             kind: 'ClusterIssuer',
             name: 'acme-letsencrypt',
           },
-          dnsNames: [args.baseDomain, pulumi.interpolate`*.${args.baseDomain}`],
+          dnsNames,
         },
       },
       {
